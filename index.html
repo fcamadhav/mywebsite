@@ -3,381 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Qwecto - Smart Loan Platform</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
-
+    <title>Qwecto - Smart EMI Calculator</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #E0E5EC; }
-        /* Hide scrollbar for cleaner look */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #E0E5EC; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        /* --- THE SOFT DESIGN (NEUMORPHISM) --- */
+        body {
+            background-color: #E0E5EC;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #4a5568;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+        }
+
+        /* The "Soft" Card */
+        .card {
+            background-color: #E0E5EC;
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 9px 9px 16px rgb(163,177,198,0.6), 
+                       -9px -9px 16px rgba(255,255,255, 0.5);
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            background: #E0E5EC;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 4px 4px 8px rgb(163,177,198,0.6), 
+                       -4px -4px 8px rgba(255,255,255, 0.5);
+            color: #10b981; /* Emerald Green */
+            font-weight: bold;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #374151;
+        }
+
+        /* Inputs */
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* The "Pressed In" Look for Inputs */
+        input {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 15px;
+            background: #E0E5EC;
+            box-shadow: inset 6px 6px 10px 0 rgba(163,177,198, 0.7), 
+                        inset -6px -6px 10px 0 rgba(255,255,255, 0.8);
+            font-size: 18px;
+            font-weight: 600;
+            color: #334155;
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            color: #10b981; /* Green text on focus */
+            box-shadow: inset 4px 4px 8px 0 rgba(163,177,198, 0.7), 
+                        inset -4px -4px 8px 0 rgba(255,255,255, 0.8),
+                        0 0 0 2px rgba(16, 185, 129, 0.1);
+        }
+
+        /* The Button */
+        button {
+            width: 100%;
+            padding: 18px;
+            border-radius: 15px;
+            border: none;
+            background-color: #E0E5EC;
+            /* Pop-out shadow */
+            box-shadow: 6px 6px 10px 0 rgba(163,177,198, 0.7), 
+                        -6px -6px 10px 0 rgba(255,255,255, 0.8);
+            color: #334155;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s ease;
+        }
+
+        button:active {
+            /* Pressed effect */
+            box-shadow: inset 4px 4px 8px 0 rgba(163,177,198, 0.7), 
+                        inset -4px -4px 8px 0 rgba(255,255,255, 0.8);
+            color: #10b981;
+            transform: scale(0.98);
+        }
+
+        /* Results Area */
+        .result-area {
+            margin-top: 30px;
+            text-align: center;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: inset 4px 4px 8px 0 rgba(163,177,198, 0.4), 
+                        inset -4px -4px 8px 0 rgba(255,255,255, 0.6);
+        }
+
+        .result-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 36px;
+            font-weight: 800;
+            color: #10b981;
+            text-shadow: 2px 2px 4px rgba(163,177,198,0.3);
+        }
+        
+        .total-text {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 10px;
+        }
+
     </style>
 </head>
 <body>
 
-    <div id="root"></div>
-
-    <script type="text/babel">
-        const { useState, useMemo, useEffect } = React;
-
-        // --- ICONS (SVG Replicas of Lucide) ---
-        const IconWrapper = ({ children, size = 24, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
-        );
-        const Calculator = (p) => <IconWrapper {...p}><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></IconWrapper>;
-        const Calendar = (p) => <IconWrapper {...p}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></IconWrapper>;
-        const Download = (p) => <IconWrapper {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></IconWrapper>;
-        const FileText = (p) => <IconWrapper {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></IconWrapper>;
-        const Clock = (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconWrapper>;
-        const Target = (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></IconWrapper>;
-        const Home = (p) => <IconWrapper {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></IconWrapper>;
-        const ArrowRightLeft = (p) => <IconWrapper {...p}><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></IconWrapper>;
-
-        // --- UTILITIES ---
-        const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
-        const formatFullNumber = (num) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(num);
-        const amountToWords = (num) => {
-            if (!num || num === 0) return '';
-            const a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
-            const b = ['', '', 'Twenty','Thirty','Forty','Fifty', 'Sixty','Seventy','Eighty','Ninety'];
-            const inWords = (n) => {
-                if ((n = n.toString()).length > 9) return 'overflow';
-                let n_array = ('000000000' + n).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
-                if (!n_array) return; 
-                let str = '';
-                str += (n_array[1] != 0) ? (a[Number(n_array[1])] || b[n_array[1][0]] + ' ' + a[n_array[1][1]]) + 'Crore ' : '';
-                str += (n_array[2] != 0) ? (a[Number(n_array[2])] || b[n_array[2][0]] + ' ' + a[n_array[2][1]]) + 'Lakh ' : '';
-                str += (n_array[3] != 0) ? (a[Number(n_array[3])] || b[n_array[3][0]] + ' ' + a[n_array[3][1]]) + 'Thousand ' : '';
-                str += (n_array[4] != 0) ? (a[Number(n_array[4])] || b[n_array[4][0]] + ' ' + a[n_array[4][1]]) + 'Hundred ' : '';
-                str += (n_array[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n_array[5])] || b[n_array[5][0]] + ' ' + a[n_array[5][1]]) : '';
-                return str;
-            };
-            return inWords(Math.floor(num));
-        };
-
-        // --- COMPONENTS ---
-        const NeumorphicLayout = ({ children }) => (
-            <div className="min-h-screen bg-[#E0E5EC] text-slate-600 font-sans flex items-center justify-center p-4 md:p-8">
-                {children}
-            </div>
-        );
-
-        const NeumorphicCard = ({ children, className = "" }) => (
-            <div className={`bg-[#E0E5EC] rounded-[30px] shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)] ${className}`}>
-                {children}
-            </div>
-        );
-
-        const NeumorphicInput = ({ label, value, onChange, type = "number", prefix, suffix, step = 1, isCalculated = false, helperText, onFocus }) => (
-            <div className="mb-6">
-                <div className="flex justify-between mb-2 px-1">
-                    <label className={`text-xs font-bold tracking-wider uppercase ${isCalculated ? 'text-emerald-500' : 'text-slate-500'}`}>
-                        {label} {isCalculated && "(Auto)"}
-                    </label>
-                </div>
-                <div className={`relative flex items-center rounded-2xl px-4 py-3 transition-all ${isCalculated ? 'bg-[#E0E5EC] shadow-[5px_5px_10px_#b8b9be,-5px_-5px_10px_#ffffff] border border-emerald-100/50' : 'bg-[#E0E5EC] shadow-[inset_6px_6px_10px_0_rgba(163,177,198,0.7),inset_-6px_-6px_10px_0_rgba(255,255,255,0.8)]'}`}>
-                    {prefix && <span className="text-slate-400 mr-2 font-medium">{prefix}</span>}
-                    <input type={type} value={value} onChange={(e) => !isCalculated && onChange(e.target.value)} onFocus={onFocus} readOnly={isCalculated} step={step} className={`w-full bg-transparent outline-none text-lg font-bold text-slate-700 placeholder-slate-300 ${isCalculated ? 'cursor-default text-emerald-600' : ''}`} />
-                    {suffix && <span className="text-slate-400 ml-2 text-sm font-medium">{suffix}</span>}
-                </div>
-                {helperText && <p className="text-[10px] font-semibold text-emerald-600/70 mt-2 ml-2 tracking-wide h-3 leading-none truncate">{helperText}</p>}
-            </div>
-        );
-
-        const NeumorphicToggle = ({ options, value, onChange }) => (
-            <div className="flex bg-[#E0E5EC] rounded-xl p-1 shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] h-full items-center">
-                {options.map((opt) => (
-                    <button key={opt.value} onClick={() => onChange(opt.value)} className={`flex-1 py-2 px-2 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wide transition-all duration-300 h-full flex items-center justify-center ${value === opt.value ? 'bg-[#E0E5EC] text-emerald-500 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff]' : 'text-slate-400 hover:text-slate-500'}`}>
-                        {opt.label}
-                    </button>
-                ))}
-            </div>
-        );
-
-        const NeumorphicButton = ({ children, onClick, icon: Icon, className = "" }) => (
-            <button onClick={onClick} className={`w-full py-4 rounded-2xl font-bold text-white shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 transform active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 ${className}`}>
-                {Icon && <Icon size={20} />}
-                {children}
-            </button>
-        );
-
-        // --- MAIN APP LOGIC ---
-        function LoanCalculator() {
-            const [activeFields, setActiveFields] = useState(['principal', 'rate', 'tenure']);
-            const [values, setValues] = useState({ principal: 5000000, rate: 8.5, tenure: 20, emi: 43391 });
-            const [tenureType, setTenureType] = useState('years'); 
-            const [interestType, setInterestType] = useState('fixed');
-            const [activeTab, setActiveTab] = useState('calculator');
+    <div class="main-container">
+        <div class="card">
             
-            const [extraEMI, setExtraEMI] = useState(5000);
-            const [sipReturnRate, setSipReturnRate] = useState(12);
+            <div class="header">
+                <div class="logo-icon">Q</div>
+                <h1>Qwecto</h1>
+            </div>
 
-            const handleInputChange = (field, newValue) => {
-                setValues(prev => ({ ...prev, [field]: newValue }));
-                setActiveFields(prev => {
-                    if (prev.includes(field)) {
-                        const filtered = prev.filter(f => f !== field);
-                        return [...filtered, field];
-                    }
-                    const newActive = [...prev, field];
-                    return newActive.slice(1); 
-                });
-            };
+            <div class="input-group">
+                <label>Loan Amount (₹)</label>
+                <input type="number" id="amount" value="500000" oninput="calculate()">
+            </div>
 
-            const calcTarget = useMemo(() => {
-                const allFields = ['principal', 'rate', 'tenure', 'emi'];
-                return allFields.find(f => !activeFields.includes(f));
-            }, [activeFields]);
+            <div class="input-group">
+                <label>Interest Rate (%)</label>
+                <input type="number" id="rate" value="8.5" step="0.1" oninput="calculate()">
+            </div>
 
-            const calculatedData = useMemo(() => {
-                let P = parseFloat(values.principal) || 0;
-                let R = parseFloat(values.rate) || 0;
-                let N_val = parseFloat(values.tenure) || 0;
-                let N_months = tenureType === 'years' ? N_val * 12 : N_val;
-                let E = parseFloat(values.emi) || 0;
-                
-                if (calcTarget === 'principal') {
-                    const r = R / 12 / 100;
-                    if (r === 0) P = E * N_months; 
-                    else { const factor = Math.pow(1 + r, N_months); P = (E * (factor - 1)) / (r * factor); }
-                } else if (calcTarget === 'tenure') {
-                    const r = R / 12 / 100;
-                    const interestOnly = P * r;
-                    if (E > interestOnly && E > 0 && P > 0) {
-                        const n = Math.log(E / (E - interestOnly)) / Math.log(1 + r); N_months = Math.ceil(n);
-                    } else { N_months = 0; }
-                } else if (calcTarget === 'rate') {
-                    if (E * N_months > P && P > 0 && N_months > 0) {
-                        let low = 0, high = 100;
-                        for(let i=0; i<40; i++) {
-                        let mid = (low + high) / 2; let r_mid = mid / 12 / 100;
-                        let calc_E = (P * r_mid * Math.pow(1+r_mid, N_months)) / (Math.pow(1+r_mid, N_months) - 1);
-                        if (calc_E > E) high = mid; else low = mid;
-                        }
-                        R = high;
-                    } else { R = 0; }
-                } else if (calcTarget === 'emi') {
-                    if (P > 0 && R >= 0 && N_months > 0) {
-                        const r = R / 12 / 100;
-                        if (r === 0) E = P / N_months;
-                        else E = (P * r * Math.pow(1 + r, N_months)) / (Math.pow(1 + r, N_months) - 1);
-                    } else { E = 0; }
-                }
+            <div class="input-group">
+                <label>Tenure (Years)</label>
+                <input type="number" id="years" value="5" oninput="calculate()">
+            </div>
 
-                if (P <= 0 || N_months <= 0 || E <= 0) return null;
+            <div class="result-area">
+                <div class="result-label">Your Monthly EMI</div>
+                <div class="result-value" id="emiDisplay">₹10,258</div>
+                <div class="total-text" id="totalDisplay">Total Payment: ₹6,15,498</div>
+            </div>
+            
+            <button onclick="alert('Detailed schedule coming soon!')">View Schedule</button>
 
-                const totalPayment = E * N_months;
-                const totalInterest = totalPayment - P;
-                
-                const schedule = [];
-                let balance = P;
-                const r = R / 12 / 100;
-                const safeMonths = Math.min(N_months, 600); 
-                for (let i = 1; i <= safeMonths; i++) {
-                    let interestComponent = balance * r;
-                    let principalComponent = E - interestComponent;
-                    if (i === safeMonths || balance - principalComponent < 0) { principalComponent = balance; balance = 0; } 
-                    else { balance -= principalComponent; }
-                    schedule.push({ month: i, emi: E, principalComponent, interestComponent, balance });
-                    if (balance <= 0.1) break; 
-                }
+        </div>
+    </div>
 
-                return { principal: P, rate: R, months: N_months, emi: E, totalPayment, totalInterest, schedule };
-            }, [values, tenureType, calcTarget]);
+    <script>
+        function calculate() {
+            // 1. Get values
+            let p = parseFloat(document.getElementById('amount').value);
+            let r = parseFloat(document.getElementById('rate').value);
+            let n = parseFloat(document.getElementById('years').value);
 
-            const analysisData = useMemo(() => {
-                if (!calculatedData) return null;
-                const sipMonthlyRate = (sipReturnRate / 12) / 100;
-                const monthsOriginal = calculatedData.months;
-                
-                let foreclosureMonth = null;
-                let interestPaidUntilForeclosure = 0;
-                if (calculatedData.schedule) {
-                    for (let i = 0; i < calculatedData.schedule.length; i++) {
-                        const month = calculatedData.schedule[i].month;
-                        const loanBalance = calculatedData.schedule[i].balance;
-                        let fv = parseFloat(extraEMI) * ((Math.pow(1 + sipMonthlyRate, month) - 1) / sipMonthlyRate) * (1 + sipMonthlyRate);
-                        if (fv >= loanBalance) { 
-                        foreclosureMonth = month; 
-                        interestPaidUntilForeclosure = calculatedData.schedule.slice(0, i + 1).reduce((acc, row) => acc + row.interestComponent, 0);
-                        break; 
-                        }
-                    }
-                }
+            if (!p || !r || !n) return;
 
-                const duration = foreclosureMonth || monthsOriginal;
-                const sipMaturity = parseFloat(extraEMI) * ((Math.pow(1 + sipMonthlyRate, duration) - 1) / sipMonthlyRate) * (1 + sipMonthlyRate);
-                const totalInvested = parseFloat(extraEMI) * duration;
-                const sipProfit = sipMaturity - totalInvested;
-                const interestSaved = foreclosureMonth ? (calculatedData.totalInterest - interestPaidUntilForeclosure) : 0;
+            // 2. Convert logic
+            let monthlyRate = r / 12 / 100;
+            let months = n * 12;
 
-                let emiOpportunityValue = 0;
-                let savedTenureMonths = 0;
-                if (foreclosureMonth && foreclosureMonth < monthsOriginal) {
-                    savedTenureMonths = monthsOriginal - foreclosureMonth;
-                    if (calculatedData.emi > 0) {
-                        emiOpportunityValue = calculatedData.emi * ((Math.pow(1 + sipMonthlyRate, savedTenureMonths) - 1) / sipMonthlyRate) * (1 + sipMonthlyRate);
-                    }
-                }
+            // 3. Formula
+            let emi = p * monthlyRate * (Math.pow(1 + monthlyRate, months) / (Math.pow(1 + monthlyRate, months) - 1));
+            let total = emi * months;
 
-                return { maturity: sipMaturity, profit: sipProfit, invested: totalInvested, foreclosureMonth, interestSaved, emiOpportunityValue, savedTenureMonths };
-            }, [calculatedData, extraEMI, sipReturnRate]);
+            // 4. Update Screen (Format nicely)
+            document.getElementById('emiDisplay').innerText = "₹" + Math.round(emi).toLocaleString('en-IN');
+            document.getElementById('totalDisplay').innerText = "Total Payment: ₹" + Math.round(total).toLocaleString('en-IN');
+        }
 
-            const downloadCSV = () => {
-                if (!calculatedData) return;
-                const headers = ["Month", "Opening Balance", "EMI", "Principal", "Interest", "Closing Balance"];
-                const rows = calculatedData.schedule.map((row, index) => {
-                const prevBalance = index === 0 ? calculatedData.principal : calculatedData.schedule[index-1].balance;
-                return [row.month, prevBalance.toFixed(2), row.emi.toFixed(2), row.principalComponent.toFixed(2), row.interestComponent.toFixed(2), row.balance.toFixed(2)].join(",");
-                });
-                const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", "amortization_schedule.csv");
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            };
+        // Run once on load
+        calculate();
+    </script>
 
-            const downloadPDF = () => {
-                if (!calculatedData || !window.jspdf) return;
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                
-                const drawHeader = (doc, pageNumber) => {
-                    const width = doc.internal.pageSize.getWidth();
-                    const height = doc.internal.pageSize.getHeight();
-                    
-                    if (pageNumber === 1) {
-                        doc.setFillColor(16, 185, 129); 
-                        doc.rect(0, 0, width, 40, 'F');
-                        doc.setTextColor(255, 255, 255);
-                        doc.setFontSize(24);
-                        doc.setFont("helvetica", "bold");
-                        doc.text("Qwecto", 14, 20);
-                        doc.setFontSize(10);
-                        doc.setFont("helvetica", "normal");
-                        doc.text("Smart Loan Report", 14, 28);
-                        doc.text(new Date().toLocaleDateString(), width - 14, 20, { align: "right" });
-
-                        doc.setTextColor(60, 60, 60);
-                        doc.setFontSize(12);
-                        doc.setFont("helvetica", "bold");
-                        doc.text("Loan Summary", 14, 50);
-
-                        const startY = 55;
-                        const boxH = 30;
-                        doc.setDrawColor(220, 220, 220);
-                        doc.setFillColor(248, 250, 252);
-                        doc.roundedRect(14, startY, width - 28, boxH, 3, 3, 'FD');
-
-                        doc.setFontSize(10);
-                        doc.setTextColor(100);
-                        doc.text("Loan Amount", 20, startY + 8);
-                        doc.text("Interest Rate", 110, startY + 8);
-                        
-                        doc.setTextColor(0);
-                        doc.setFont("helvetica", "bold");
-                        doc.text(formatCurrency(calculatedData.principal), 20, startY + 14);
-                        doc.text(`${calculatedData.rate}% (${interestType})`, 110, startY + 14);
-
-                        doc.setFont("helvetica", "normal");
-                        doc.setTextColor(100);
-                        doc.text("Tenure", 20, startY + 22);
-                        doc.text("Monthly EMI", 110, startY + 22);
-
-                        doc.setTextColor(0);
-                        doc.setFont("helvetica", "bold");
-                        doc.text(`${(calculatedData.months/12).toFixed(1)} Years`, 20, startY + 28);
-                        doc.text(formatCurrency(calculatedData.emi), 110, startY + 28);
-                    } else {
-                        doc.setFillColor(240, 253, 244); 
-                        doc.rect(0, 0, width, 15, 'F');
-                        doc.setTextColor(16, 185, 129);
-                        doc.setFontSize(10);
-                        doc.setFont("helvetica", "bold");
-                        doc.text("Qwecto - Loan Schedule (Cont.)", 14, 10);
-                        doc.setTextColor(100);
-                        doc.setFont("helvetica", "normal");
-                        doc.text(new Date().toLocaleDateString(), width - 14, 10, { align: "right" });
-                    }
-                    
-                    doc.setFontSize(8);
-                    doc.setTextColor(150);
-                    doc.text(`Page ${pageNumber}`, width / 2, height - 10, { align: "center" });
-                };
-                
-                const annualRows = [];
-                let yearPrincipal = 0; let yearInterest = 0; let yearTotal = 0; let currentYear = 1;
-                calculatedData.schedule.forEach((row, index) => {
-                yearPrincipal += row.principalComponent; yearInterest += row.interestComponent; yearTotal += row.emi;
-                if ((index + 1) % 12 === 0 || index === calculatedData.schedule.length - 1) {
-                    annualRows.push([`Year ${currentYear}`, formatFullNumber(yearTotal), formatFullNumber(yearPrincipal), formatFullNumber(yearInterest), formatCurrency(row.balance)]);
-                    yearPrincipal = 0; yearInterest = 0; yearTotal = 0; currentYear++;
-                }
-                });
-
-                doc.autoTable({ 
-                startY: 95,
-                head: [["Period", "Total Paid", "Principal", "Interest", "Balance"]], 
-                body: annualRows, 
-                theme: 'grid', 
-                headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' }, 
-                styles: { fontSize: 9, cellPadding: 3 }, 
-                alternateRowStyles: { fillColor: [240, 253, 244] }, 
-                margin: { top: 25, bottom: 20, left: 14, right: 14 }, 
-                didDrawPage: (data) => { 
-                    drawHeader(doc, data.pageNumber);
-                } 
-                });
-                
-                doc.save("Qwecto_Loan_Report.pdf");
-            };
-
-            return (
-                <NeumorphicLayout>
-                    <div className="w-full max-w-5xl">
-                        <div className="flex justify-between items-center mb-8 px-4">
-                        <h1 className="text-2xl font-bold text-slate-700 tracking-tight flex items-center gap-2">
-                            <div className="p-2 rounded-lg bg-[#E0E5EC] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff]"><Calculator className="text-emerald-500" size={24} /></div>
-                            Qwecto
-                        </h1>
-                        <div className="flex bg-[#E0E5EC] rounded-2xl p-1.5 shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff]">
-                            {[{ id: 'calculator', icon: Home, label: 'Loan' }, { id: 'schedule', icon: Calendar, label: 'Schedule' }, { id: 'smartRepay', icon: Target, label: 'Smart Repay' }].map(tab => (
-                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all duration-300 ${activeTab === tab.id ? 'bg-[#E0E5EC] text-emerald-500 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff]' : 'text-slate-400 hover:text-slate-500'}`}>
-                                <tab.icon size={16} />
-                                <span className="hidden sm:inline">{tab.label}</span>
-                            </button>
-                            ))}
-                        </div>
-                        </div>
-
-                        <NeumorphicCard className="overflow-hidden p-8">
-                        {activeTab === 'calculator' && (
-                            <div className="flex flex-col md:flex-row gap-12">
-                            <div className="w-full md:w-5/12 flex flex-col justify-center items-center relative">
-                                <div className="absolute top-0 left-0 w-full text-center md:text-left"><h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">{calcTarget === 'principal' ? 'Loan Amount' : 'Monthly Payment'}</h3></div>
-                                <div className="my-10 relative w-64 h-64 flex items-center justify-center">
-                                    <div className="w-56 h-56 rounded-full bg-[#E0E5EC] shadow-[12px_12px_24px_#b8b9be,-12px_-12px_24px_#ffffff] flex items-center justify-center relative">
-                                    <div className="w-40 h-40 rounded-full bg-[#E0E5EC] shadow-[inset_6px_6px_12px_#b8b9be,inset_-6px_-6px_12px_#ffffff] flex flex-col items-center justify-center p-4 text-center">
-                                        <span className="text-xs font-semibold text-slate-400 mb-1">Total Interest</span>
-                                        <span className="text-lg font-bold text-rose-400">{calculatedData ? formatFullNumber(calculatedData.totalInterest) : '-'}</span>
-                                    </div>
-                                    </div>
-                                </div>
-                                <div className="text-center"><span className="text-sm font-bold text-slate-400 uppercase">{calcTarget === 'principal' ? 'Maximum Loan' : 'EMI Amount'}</span><div className="text-5xl font-bold text-emerald-500 mt-2 tracking-tight drop-shadow-sm">{calculatedData ? (calcTarget === 'principal' ? formatFullNumber(calculatedData.principal) : formatCurrency(calculatedData.emi)) : '0'}</div></div>
-                            </div>
-                            <div className="w-full md:w-7/12 flex flex-col justify-center pl-0 md:pl-8 border-t md:border-t-0 md:border-l border-slate-200 pt-8 md:pt-0">
-                                <NeumorphicInput
+</body>
+</html>
