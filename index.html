@@ -1,333 +1,794 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Qwecto - Smart Loan Platform</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
+import React, { useState, useMemo, useEffect } from 'react';
+import { 
+  Calculator, 
+  TrendingUp, 
+  Calendar, 
+  Download, 
+  FileText,
+  CheckCircle2,
+  Circle,
+  Clock,
+  Target,
+  Home,
+  PieChart,
+  ArrowRightLeft,
+  PiggyBank,
+  ChevronRight
+} from 'lucide-react';
 
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+// --- Utility Functions ---
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(value);
+};
 
-    <style>
-        /* Smoother scrolling and font setup */
-        body { font-family: 'Segoe UI', sans-serif; background-color: #E0E5EC; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
-</head>
-<body>
+const formatFullNumber = (number) => {
+  return new Intl.NumberFormat('en-IN', {
+    maximumFractionDigits: 0,
+  }).format(number);
+};
 
-    <div id="root"></div>
+const formatCompactNumber = (number) => {
+  return new Intl.NumberFormat('en-IN', {
+    notation: "compact",
+    maximumFractionDigits: 1
+  }).format(number);
+};
 
-    <script type="text/babel">
-        const { useState, useMemo, useEffect } = React;
+const amountToWords = (num) => {
+  if (!num || num === 0) return '';
+  const a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
+  const b = ['', '', 'Twenty','Thirty','Forty','Fifty', 'Sixty','Seventy','Eighty','Ninety'];
+  const inWords = (n) => {
+    if ((n = n.toString()).length > 9) return 'overflow';
+    let n_array = ('000000000' + n).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if (!n_array) return; 
+    let str = '';
+    str += (n_array[1] != 0) ? (a[Number(n_array[1])] || b[n_array[1][0]] + ' ' + a[n_array[1][1]]) + 'Crore ' : '';
+    str += (n_array[2] != 0) ? (a[Number(n_array[2])] || b[n_array[2][0]] + ' ' + a[n_array[2][1]]) + 'Lakh ' : '';
+    str += (n_array[3] != 0) ? (a[Number(n_array[3])] || b[n_array[3][0]] + ' ' + a[n_array[3][1]]) + 'Thousand ' : '';
+    str += (n_array[4] != 0) ? (a[Number(n_array[4])] || b[n_array[4][0]] + ' ' + a[n_array[4][1]]) + 'Hundred ' : '';
+    str += (n_array[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n_array[5])] || b[n_array[5][0]] + ' ' + a[n_array[5][1]]) : '';
+    return str;
+  };
+  return inWords(Math.floor(num));
+};
 
-        // --- 1. ICONS (Recreated manually to avoid import errors) ---
-        const Icon = ({ d, size = 24, className = "" }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d={d} />
-            </svg>
-        );
-        // Specific Icons
-        const CalculatorIcon = (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>;
-        const CalendarIcon = (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>;
-        const TargetIcon = (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
-        const DownloadIcon = (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>;
-        const FileTextIcon = (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>;
-        const ClockIcon = (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
-        const ArrowIcon = (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>;
+// --- Neumorphic Components ---
 
-        // --- 2. FORMATTING UTILS ---
-        const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
-        const formatFullNumber = (num) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(num);
-        const amountToWords = (num) => {
-            if (!num || num === 0) return '';
-            const a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
-            const b = ['', '', 'Twenty','Thirty','Forty','Fifty', 'Sixty','Seventy','Eighty','Ninety'];
-            const inWords = (n) => {
-                if ((n = n.toString()).length > 9) return 'overflow';
-                let n_array = ('000000000' + n).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
-                if (!n_array) return; 
-                let str = '';
-                str += (n_array[1] != 0) ? (a[Number(n_array[1])] || b[n_array[1][0]] + ' ' + a[n_array[1][1]]) + 'Crore ' : '';
-                str += (n_array[2] != 0) ? (a[Number(n_array[2])] || b[n_array[2][0]] + ' ' + a[n_array[2][1]]) + 'Lakh ' : '';
-                str += (n_array[3] != 0) ? (a[Number(n_array[3])] || b[n_array[3][0]] + ' ' + a[n_array[3][1]]) + 'Thousand ' : '';
-                str += (n_array[4] != 0) ? (a[Number(n_array[4])] || b[n_array[4][0]] + ' ' + a[n_array[4][1]]) + 'Hundred ' : '';
-                str += (n_array[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n_array[5])] || b[n_array[5][0]] + ' ' + a[n_array[5][1]]) : '';
-                return str;
-            };
-            return inWords(Math.floor(num));
-        };
+const NeumorphicLayout = ({ children }) => (
+  <div className="min-h-screen bg-[#E6F0FA] text-slate-600 font-sans flex items-center justify-center p-4 md:p-8 overflow-x-hidden">
+    <style>{`
+      /* Hide Spinners */
+      input[type=number]::-webkit-inner-spin-button, 
+      input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+      input[type=number] { -moz-appearance: textfield; }
 
-        // --- 3. UI COMPONENTS (Neumorphic Style) ---
-        const NeumorphicCard = ({ children, className = "" }) => (
-            <div className={`bg-[#E0E5EC] rounded-[30px] shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)] ${className}`}>
-                {children}
-            </div>
-        );
-
-        const NeumorphicInput = ({ label, value, onChange, type = "number", prefix, suffix, isCalculated = false, helperText }) => (
-            <div className="mb-6">
-                <div className="flex justify-between mb-2 px-1">
-                    <label className={`text-xs font-bold tracking-wider uppercase ${isCalculated ? 'text-emerald-500' : 'text-slate-500'}`}>
-                        {label} {isCalculated && "(Auto)"}
-                    </label>
-                </div>
-                <div className={`relative flex items-center rounded-2xl px-4 py-3 transition-all ${isCalculated ? 'bg-[#E0E5EC] shadow-[5px_5px_10px_#b8b9be,-5px_-5px_10px_#ffffff] border border-emerald-100/50' : 'bg-[#E0E5EC] shadow-[inset_6px_6px_10px_0_rgba(163,177,198,0.7),inset_-6px_-6px_10px_0_rgba(255,255,255,0.8)]'}`}>
-                    {prefix && <span className="text-slate-400 mr-2 font-medium">{prefix}</span>}
-                    <input type={type} value={value} onChange={(e) => !isCalculated && onChange(e.target.value)} readOnly={isCalculated} className={`w-full bg-transparent outline-none text-lg font-bold text-slate-700 placeholder-slate-300 ${isCalculated ? 'cursor-default text-emerald-600' : ''}`} />
-                    {suffix && <span className="text-slate-400 ml-2 text-sm font-medium">{suffix}</span>}
-                </div>
-                {helperText && <p className="text-[10px] font-semibold text-emerald-600/70 mt-2 ml-2 tracking-wide h-3 leading-none truncate">{helperText}</p>}
-            </div>
-        );
-
-        const NeumorphicButton = ({ children, onClick, className = "" }) => (
-            <button onClick={onClick} className={`w-full py-4 rounded-2xl font-bold text-white shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 transform active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 ${className}`}>
-                {children}
-            </button>
-        );
-
-        // --- 4. MAIN APP LOGIC ---
-        function App() {
-            const [values, setValues] = useState({ principal: 5000000, rate: 8.5, tenure: 20, emi: 0 });
-            const [activeTab, setActiveTab] = useState('calculator');
-            const [extraEMI, setExtraEMI] = useState(5000);
-            const [sipReturnRate, setSipReturnRate] = useState(12);
-
-            // Calculations
-            const data = useMemo(() => {
-                const P = parseFloat(values.principal) || 0;
-                const R = parseFloat(values.rate) || 0;
-                const N = parseFloat(values.tenure) || 0;
-                
-                if(P===0 || R===0 || N===0) return null;
-
-                const r = R / 12 / 100;
-                const months = N * 12;
-                const emi = P * r * (Math.pow(1 + r, months) / (Math.pow(1 + r, months) - 1));
-                const totalPay = emi * months;
-                const totalInt = totalPay - P;
-
-                // Generate Schedule
-                let balance = P;
-                const schedule = [];
-                for(let i=1; i<=months; i++){
-                    let intComp = balance * r;
-                    let prinComp = emi - intComp;
-                    balance -= prinComp;
-                    if(balance < 0) balance = 0;
-                    schedule.push({ month: i, principal: prinComp, interest: intComp, balance: balance, emi: emi });
-                    if(balance === 0) break;
-                }
-
-                return { emi, totalPay, totalInt, schedule, months };
-            }, [values]);
-
-            // Smart Repay Analysis
-            const analysis = useMemo(() => {
-                if(!data || !extraEMI) return null;
-                const sipRate = (sipReturnRate / 12) / 100;
-                let foreclosureMonth = null;
-                
-                // Check when SIP value > Loan Balance
-                for(let row of data.schedule) {
-                    // SIP Value formula: P * ((1+i)^n - 1)/i * (1+i)
-                    let sipValue = parseFloat(extraEMI) * ((Math.pow(1 + sipRate, row.month) - 1) / sipRate) * (1 + sipRate);
-                    if(sipValue >= row.balance) {
-                        foreclosureMonth = row.month;
-                        break;
-                    }
-                }
-
-                const duration = foreclosureMonth || data.months;
-                const sipMaturity = parseFloat(extraEMI) * ((Math.pow(1 + sipRate, duration) - 1) / sipRate) * (1 + sipRate);
-                const invested = parseFloat(extraEMI) * duration;
-                
-                return { foreclosureMonth, sipMaturity, invested, profit: sipMaturity - invested };
-            }, [data, extraEMI, sipReturnRate]);
-
-            // --- DOWNLOAD HANDLERS ---
-            const downloadCSV = () => {
-                if (!data) return;
-                const headers = ["Month", "EMI", "Principal", "Interest", "Balance"];
-                const rows = data.schedule.map(r => [r.month, r.emi.toFixed(0), r.principal.toFixed(0), r.interest.toFixed(0), r.balance.toFixed(0)].join(","));
-                const csv = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
-                const link = document.createElement("a");
-                link.href = encodeURI(csv);
-                link.download = "qwecto_schedule.csv";
-                link.click();
-            };
-
-            const downloadPDF = () => {
-                if(!data || !window.jspdf) return;
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                doc.setFillColor(16, 185, 129);
-                doc.rect(0,0,210,40,'F');
-                doc.setTextColor(255,255,255);
-                doc.setFontSize(22);
-                doc.text("Qwecto", 14, 25);
-                doc.setFontSize(12);
-                doc.text("Loan Schedule", 14, 33);
-                
-                const rows = data.schedule.filter((_, i) => (i+1)%12 === 0 || i === data.schedule.length-1).map(r => [
-                    `Year ${Math.ceil(r.month/12)}`, 
-                    formatFullNumber(r.emi * 12), 
-                    formatFullNumber(r.balance)
-                ]);
-
-                doc.autoTable({
-                    head: [['Period', 'Total Paid (Year)', 'Balance']],
-                    body: rows,
-                    startY: 50,
-                });
-                doc.save("Qwecto_Report.pdf");
-            };
-
-            return (
-                <div className="min-h-screen bg-[#E0E5EC] text-slate-600 font-sans flex items-center justify-center p-4 md:p-8">
-                    <div className="w-full max-w-5xl">
-                        
-                        {/* HEADER */}
-                        <div className="flex justify-between items-center mb-8 px-4">
-                            <h1 className="text-2xl font-bold text-slate-700 flex items-center gap-2">
-                                <div className="p-2 rounded-lg bg-[#E0E5EC] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff]">
-                                    <div className="text-emerald-500 font-bold">Q</div>
-                                </div>
-                                Qwecto
-                            </h1>
-                            {/* TABS */}
-                            <div className="flex bg-[#E0E5EC] rounded-2xl p-1.5 shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff]">
-                                {[
-                                    { id: 'calculator', label: 'Loan', icon: CalculatorIcon },
-                                    { id: 'schedule', label: 'Schedule', icon: CalendarIcon },
-                                    { id: 'smartRepay', label: 'Smart Repay', icon: TargetIcon }
-                                ].map(tab => (
-                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all duration-300 ${activeTab === tab.id ? 'bg-[#E0E5EC] text-emerald-500 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff]' : 'text-slate-400 hover:text-slate-500'}`}>
-                                        <tab.icon className="w-4 h-4" />
-                                        <span className="hidden sm:inline">{tab.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <NeumorphicCard className="overflow-hidden p-8">
-                            
-                            {/* TAB: CALCULATOR */}
-                            {activeTab === 'calculator' && (
-                                <div className="flex flex-col md:flex-row gap-12">
-                                    <div className="w-full md:w-1/2">
-                                        <NeumorphicInput label="Loan Amount" value={values.principal} onChange={v => setValues({...values, principal: v})} prefix="₹" helperText={amountToWords(values.principal)} />
-                                        <NeumorphicInput label="Interest Rate" value={values.rate} onChange={v => setValues({...values, rate: v})} suffix="%" step="0.1" />
-                                        <NeumorphicInput label="Tenure (Years)" value={values.tenure} onChange={v => setValues({...values, tenure: v})} />
-                                        
-                                        <div className="mt-8">
-                                            <NeumorphicButton onClick={() => setActiveTab('schedule')}>View Schedule Details</NeumorphicButton>
-                                        </div>
-                                    </div>
-                                    <div className="w-full md:w-1/2 flex flex-col items-center justify-center border-l border-slate-200 pl-8">
-                                        <div className="w-56 h-56 rounded-full bg-[#E0E5EC] shadow-[12px_12px_24px_#b8b9be,-12px_-12px_24px_#ffffff] flex items-center justify-center mb-6">
-                                            <div className="text-center">
-                                                <div className="text-xs font-bold text-slate-400 uppercase">Monthly EMI</div>
-                                                <div className="text-3xl font-bold text-emerald-500 mt-2">
-                                                    {data ? formatCurrency(data.emi) : '₹0'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="w-full flex justify-between px-4 text-sm">
-                                            <span>Total Interest:</span>
-                                            <span className="font-bold text-rose-500">{data ? formatCurrency(data.totalInt) : 0}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* TAB: SCHEDULE */}
-                            {activeTab === 'schedule' && data && (
-                                <div>
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h2 className="text-xl font-bold text-slate-700">Amortization</h2>
-                                        <div className="flex gap-4">
-                                            <button onClick={downloadCSV} className="flex items-center gap-2 px-4 py-2 text-xs font-bold bg-[#E0E5EC] rounded-xl shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] text-slate-600"><FileTextIcon className="w-4 h-4"/> CSV</button>
-                                            <button onClick={downloadPDF} className="flex items-center gap-2 px-4 py-2 text-xs font-bold bg-[#E0E5EC] rounded-xl shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] text-slate-600"><DownloadIcon className="w-4 h-4"/> PDF</button>
-                                        </div>
-                                    </div>
-                                    <div className="overflow-auto max-h-[400px] rounded-2xl bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] p-4">
-                                        <table className="w-full text-sm text-left">
-                                            <thead className="text-xs text-slate-400 uppercase border-b border-slate-300">
-                                                <tr><th className="p-3">Year</th><th className="p-3">Principal</th><th className="p-3">Interest</th><th className="p-3">Balance</th></tr>
-                                            </thead>
-                                            <tbody>
-                                                {data.schedule.filter((_, i) => (i+1)%12===0 || i===data.schedule.length-1).map(r => (
-                                                    <tr key={r.month} className="border-b border-slate-200/50 hover:bg-white/30">
-                                                        <td className="p-3 font-bold">Year {Math.ceil(r.month/12)}</td>
-                                                        <td className="p-3 text-emerald-600">{formatCurrency(r.principal*12)}</td> 
-                                                        <td className="p-3 text-rose-500">{formatCurrency(r.interest*12)}</td>
-                                                        <td className="p-3 text-slate-500">{formatCurrency(r.balance)}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* TAB: SMART REPAY */}
-                            {activeTab === 'smartRepay' && (
-                                <div className="flex flex-col md:flex-row gap-8">
-                                    <div className="w-full md:w-1/3 space-y-6">
-                                        <h3 className="text-lg font-bold text-slate-700">SIP Strategy</h3>
-                                        <NeumorphicInput label="Monthly SIP Amount" value={extraEMI} onChange={setExtraEMI} prefix="₹" />
-                                        <NeumorphicInput label="Expected Return" value={sipReturnRate} onChange={setSipReturnRate} suffix="%" />
-                                        <div className="p-4 rounded-2xl bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] text-xs text-slate-500">
-                                            Invest your surplus to close the loan early.
-                                        </div>
-                                    </div>
-                                    <div className="w-full md:w-2/3">
-                                        {analysis && analysis.foreclosureMonth ? (
-                                            <div className="flex flex-col items-center justify-center h-full text-center space-y-6">
-                                                <div className="p-4 rounded-full bg-emerald-100 text-emerald-600 shadow-inner">
-                                                    <ClockIcon className="w-8 h-8" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-2xl font-bold text-slate-700">Debt Free by Year {(analysis.foreclosureMonth/12).toFixed(1)}</h4>
-                                                    <p className="text-sm text-slate-500 mt-2">Your SIP value will cross your loan balance.</p>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4 w-full">
-                                                    <div className="p-4 rounded-2xl bg-[#E0E5EC] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff]">
-                                                        <div className="text-xs font-bold text-slate-400 uppercase">Total Invested</div>
-                                                        <div className="text-lg font-bold text-slate-700">{formatFullNumber(analysis.invested)}</div>
-                                                    </div>
-                                                    <div className="p-4 rounded-2xl bg-[#E0E5EC] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff]">
-                                                        <div className="text-xs font-bold text-emerald-500 uppercase">Profit</div>
-                                                        <div className="text-lg font-bold text-emerald-600">+{formatFullNumber(analysis.profit)}</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center justify-center h-full text-slate-400">Enter SIP amount to see analysis</div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                        </NeumorphicCard>
-                    </div>
-                </div>
-            );
+      /* Q-Shape Grid System */
+      .q-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+      }
+      
+      /* Desktop Q-Shape Configuration */
+      @media (min-width: 1024px) {
+        .q-grid {
+          grid-template-columns: 1.3fr 1fr; /* Ratio for Body vs Tail */
+          grid-template-areas: 
+            "body tail";
+          align-items: center;
         }
+        .q-body { 
+           grid-area: body; 
+           z-index: 20; /* Sits on top */
+           aspect-ratio: 1/1; 
+           max-width: 650px;
+           margin: 0 auto;
+           position: relative;
+        }
+        .q-tail { 
+           grid-area: tail; 
+           margin-top: 35%; /* Push down to create the Q leg */
+           margin-left: -80px; /* Pull left to tuck behind/connect */
+           z-index: 10; /* Sits behind */
+           position: relative;
+           /* CRITICAL FIX: Add left padding to push content out from under the circle */
+           padding-left: 100px !important; 
+        }
+      }
+    `}</style>
+    {children}
+  </div>
+);
 
-        // Start the App
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+const NeumorphicCard = ({ children, className = "" }) => (
+  <div className={`bg-[#E6F0FA] rounded-[50px] shadow-[12px_12px_24px_#BCCCDC,-12px_-12px_24px_#FFFFFF] ${className}`}>
+    {children}
+  </div>
+);
+
+const NeumorphicInput = ({ label, value, onChange, type = "number", prefix, suffix, step = 1, isCalculated = false, helperText, onFocus, onToggle }) => (
+  <div className="mb-5">
+    <div className="flex justify-between mb-2 px-2 items-center cursor-pointer" onClick={onToggle}>
+      <div className="flex items-center gap-2">
+        <label className={`text-xs font-bold tracking-widest uppercase cursor-pointer ${isCalculated ? 'text-cyan-600' : 'text-slate-400'}`}>
+          {label} {isCalculated && "(Auto)"}
+        </label>
+      </div>
+    </div>
+    <div className={`relative flex items-center rounded-2xl px-4 py-3.5 transition-all duration-300
+        ${isCalculated 
+          ? 'bg-[#E6F0FA] shadow-[6px_6px_12px_#BCCCDC,-6px_-6px_12px_#FFFFFF] border border-cyan-100' 
+          : 'bg-[#E6F0FA] shadow-[inset_6px_6px_10px_#BCCCDC,inset_-6px_-6px_10px_#FFFFFF]'
+        }
+    `}>
+      {prefix && <span className="text-slate-400 mr-2 font-medium">{prefix}</span>}
+      <input
+        type={type} value={value} onChange={(e) => !isCalculated && onChange(e.target.value)} onFocus={onFocus} readOnly={isCalculated} step={step}
+        className={`w-full bg-transparent outline-none text-lg font-bold text-slate-700 placeholder-slate-300 ${isCalculated ? 'cursor-default text-cyan-600' : ''}`}
+      />
+      {suffix && <span className="text-slate-400 ml-2 text-sm font-medium">{suffix}</span>}
+    </div>
+    {helperText && <p className="text-[10px] font-bold text-cyan-600/60 mt-2 ml-2 tracking-wide h-3 leading-none truncate">{helperText}</p>}
+  </div>
+);
+
+const NeumorphicToggle = ({ options, value, onChange }) => (
+  <div className="flex bg-[#E6F0FA] rounded-xl p-1.5 shadow-[inset_4px_4px_8px_#BCCCDC,inset_-4px_-4px_8px_#FFFFFF] h-full items-center">
+    {options.map((opt) => (
+      <button
+        key={opt.value} onClick={() => onChange(opt.value)}
+        className={`flex-1 py-2 px-2 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all duration-300 h-full flex items-center justify-center
+          ${value === opt.value ? 'bg-[#E6F0FA] text-cyan-600 shadow-[4px_4px_8px_#BCCCDC,-4px_-4px_8px_#FFFFFF]' : 'text-slate-400 hover:text-slate-500'}
+        `}
+      >
+        {opt.label}
+      </button>
+    ))}
+  </div>
+);
+
+const NeumorphicButton = ({ children, onClick, icon: Icon, className = "" }) => (
+  <button onClick={onClick} className={`w-full py-4 rounded-2xl font-bold text-white shadow-[6px_6px_12px_#BCCCDC,-6px_-6px_12px_#FFFFFF] bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 transform active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 ${className}`}>
+    {Icon && <Icon size={20} />} {children}
+  </button>
+);
+
+// --- Main Application ---
+
+export default function LoanCalculator() {
+  const [activeFields, setActiveFields] = useState(['principal', 'rate', 'tenure']);
+  const [values, setValues] = useState({ principal: 5000000, rate: 8.5, tenure: 20, emi: 43391 });
+  const [tenureType, setTenureType] = useState('years'); 
+  const [interestType, setInterestType] = useState('fixed');
+  const [activeTab, setActiveTab] = useState('schedule'); 
+  const [isPdfLibraryLoaded, setIsPdfLibraryLoaded] = useState(false);
+  
+  const [extraEMI, setExtraEMI] = useState(5000);
+  const [sipReturnRate, setSipReturnRate] = useState(12);
+
+  const handleInputChange = (field, newValue) => {
+    setValues(prev => ({ ...prev, [field]: newValue }));
+    setActiveFields(prev => {
+      if (prev.includes(field)) {
+        const filtered = prev.filter(f => f !== field);
+        return [...filtered, field];
+      }
+      const newActive = [...prev, field];
+      return newActive.slice(1); 
+    });
+  };
+  
+  const handleManualTargetSelect = (targetField) => {
+      if(calcTarget === targetField) return;
+      const allFields = ['principal', 'rate', 'tenure', 'emi'];
+      const newActive = allFields.filter(f => f !== targetField);
+      setActiveFields(newActive);
+  };
+
+  const calcTarget = useMemo(() => {
+    const allFields = ['principal', 'rate', 'tenure', 'emi'];
+    return allFields.find(f => !activeFields.includes(f));
+  }, [activeFields]);
+
+  useEffect(() => {
+    const loadScript = (src) => {
+      return new Promise((resolve, reject) => {
+        if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = false; 
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    };
+    const initPdf = async () => {
+      try {
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+        if (window.jspdf && window.jspdf.jsPDF && !window.jsPDF) { window.jsPDF = window.jspdf.jsPDF; }
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js');
+        setIsPdfLibraryLoaded(true);
+      } catch (err) { console.error("Failed to load PDF libraries", err); }
+    };
+    initPdf();
+  }, []);
+
+  const calculatedData = useMemo(() => {
+    let P = parseFloat(values.principal) || 0;
+    let R = parseFloat(values.rate) || 0;
+    let N_val = parseFloat(values.tenure) || 0;
+    let N_months = tenureType === 'years' ? N_val * 12 : N_val;
+    let E = parseFloat(values.emi) || 0;
+    
+    if (calcTarget === 'principal') {
+       const r = R / 12 / 100;
+       if (r === 0) P = E * N_months; 
+       else { const factor = Math.pow(1 + r, N_months); P = (E * (factor - 1)) / (r * factor); }
+    } else if (calcTarget === 'tenure') {
+      const r = R / 12 / 100;
+      const interestOnly = P * r;
+      if (E > interestOnly && E > 0 && P > 0) {
+         const n = Math.log(E / (E - interestOnly)) / Math.log(1 + r); N_months = Math.ceil(n);
+      } else { N_months = 0; }
+    } else if (calcTarget === 'rate') {
+       if (E * N_months > P && P > 0 && N_months > 0) {
+         let low = 0, high = 100;
+         for(let i=0; i<40; i++) {
+           let mid = (low + high) / 2; let r_mid = mid / 12 / 100;
+           let calc_E = (P * r_mid * Math.pow(1+r_mid, N_months)) / (Math.pow(1+r_mid, N_months) - 1);
+           if (calc_E > E) high = mid; else low = mid;
+         }
+         R = high;
+       } else { R = 0; }
+    } else if (calcTarget === 'emi') {
+       if (P > 0 && R >= 0 && N_months > 0) {
+          const r = R / 12 / 100;
+          if (r === 0) E = P / N_months;
+          else E = (P * r * Math.pow(1 + r, N_months)) / (Math.pow(1 + r, N_months) - 1);
+       } else { E = 0; }
+    }
+
+    if (P <= 0 || N_months <= 0 || E <= 0) return null;
+
+    const totalPayment = E * N_months;
+    const totalInterest = totalPayment - P;
+    
+    const schedule = [];
+    let balance = P;
+    const r = R / 12 / 100;
+    const safeMonths = Math.min(N_months, 600); 
+    for (let i = 1; i <= safeMonths; i++) {
+      let interestComponent = balance * r;
+      let principalComponent = E - interestComponent;
+      if (i === safeMonths || balance - principalComponent < 0) { principalComponent = balance; balance = 0; } 
+      else { balance -= principalComponent; }
+      schedule.push({ month: i, emi: E, principalComponent, interestComponent, balance });
+      if (balance <= 0.1) break; 
+    }
+
+    return { principal: P, rate: R, months: N_months, emi: E, totalPayment, totalInterest, schedule };
+  }, [values, tenureType, calcTarget]);
+
+  const analysisData = useMemo(() => {
+    if (!calculatedData) return null;
+    const sipMonthlyRate = (sipReturnRate / 12) / 100;
+    const monthsOriginal = calculatedData.months;
+    
+    let foreclosureMonth = null;
+    let interestPaidUntilForeclosure = 0;
+    if (calculatedData.schedule) {
+        for (let i = 0; i < calculatedData.schedule.length; i++) {
+            const month = calculatedData.schedule[i].month;
+            const loanBalance = calculatedData.schedule[i].balance;
+            let fv = parseFloat(extraEMI) * ((Math.pow(1 + sipMonthlyRate, month) - 1) / sipMonthlyRate) * (1 + sipMonthlyRate);
+            if (fv >= loanBalance) { 
+              foreclosureMonth = month; 
+              interestPaidUntilForeclosure = calculatedData.schedule.slice(0, i + 1).reduce((acc, row) => acc + row.interestComponent, 0);
+              break; 
+            }
+        }
+    }
+
+    const duration = foreclosureMonth || monthsOriginal;
+    const sipMaturity = parseFloat(extraEMI) * ((Math.pow(1 + sipMonthlyRate, duration) - 1) / sipMonthlyRate) * (1 + sipMonthlyRate);
+    const totalInvested = parseFloat(extraEMI) * duration;
+    const sipProfit = sipMaturity - totalInvested;
+    const interestSaved = foreclosureMonth ? (calculatedData.totalInterest - interestPaidUntilForeclosure) : 0;
+
+    let emiOpportunityValue = 0;
+    let savedTenureMonths = 0;
+    if (foreclosureMonth && foreclosureMonth < monthsOriginal) {
+        savedTenureMonths = monthsOriginal - foreclosureMonth;
+        if (calculatedData.emi > 0) {
+           emiOpportunityValue = calculatedData.emi * ((Math.pow(1 + sipMonthlyRate, savedTenureMonths) - 1) / sipMonthlyRate) * (1 + sipMonthlyRate);
+        }
+    }
+
+    return { maturity: sipMaturity, profit: sipProfit, invested: totalInvested, foreclosureMonth, interestSaved, emiOpportunityValue, savedTenureMonths };
+  }, [calculatedData, extraEMI, sipReturnRate]);
+
+  const downloadCSV = () => {
+    if (!calculatedData) return;
+    const headers = ["Month", "Opening Balance", "EMI", "Principal", "Interest", "Closing Balance"];
+    const rows = calculatedData.schedule.map((row, index) => {
+      const prevBalance = index === 0 ? calculatedData.principal : calculatedData.schedule[index-1].balance;
+      return [row.month, prevBalance.toFixed(2), row.emi.toFixed(2), row.principalComponent.toFixed(2), row.interestComponent.toFixed(2), row.balance.toFixed(2)].join(",");
+    });
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "amortization_schedule.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const downloadPDF = () => {
+    if (!calculatedData || !window.jspdf) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    const drawHeader = (doc, pageNumber) => {
+        const width = doc.internal.pageSize.getWidth();
+        const height = doc.internal.pageSize.getHeight();
+        
+        if (pageNumber === 1) {
+            doc.setFillColor(16, 185, 129); 
+            doc.rect(0, 0, width, 40, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.setFont("helvetica", "bold");
+            doc.text("Qwecto", 14, 20);
+            
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text("Smart Loan Report", 14, 28);
+            doc.text(new Date().toLocaleDateString(), width - 14, 20, { align: "right" });
+
+            doc.setTextColor(60, 60, 60);
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text("Loan Summary", 14, 50);
+
+            const startY = 55;
+            const boxH = 30;
+            doc.setDrawColor(220, 220, 220);
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(14, startY, width - 28, boxH, 3, 3, 'FD');
+
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text("Loan Amount", 20, startY + 8);
+            doc.text("Interest Rate", 110, startY + 8);
+            
+            doc.setTextColor(0);
+            doc.setFont("helvetica", "bold");
+            doc.text(formatCurrency(calculatedData.principal), 20, startY + 14);
+            doc.text(`${calculatedData.rate}% (${interestType})`, 110, startY + 14);
+
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(100);
+            doc.text("Tenure", 20, startY + 22);
+            doc.text("Monthly EMI", 110, startY + 22);
+
+            doc.setTextColor(0);
+            doc.setFont("helvetica", "bold");
+            doc.text(`${(calculatedData.months/12).toFixed(1)} Years`, 20, startY + 28);
+            doc.text(formatCurrency(calculatedData.emi), 110, startY + 28);
+        } else {
+            doc.setFillColor(240, 253, 244); 
+            doc.rect(0, 0, width, 15, 'F');
+            doc.setTextColor(16, 185, 129);
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.text("Qwecto - Loan Schedule (Cont.)", 14, 10);
+            doc.setTextColor(100);
+            doc.setFont("helvetica", "normal");
+            doc.text(new Date().toLocaleDateString(), width - 14, 10, { align: "right" });
+        }
+        
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`Page ${pageNumber}`, width / 2, height - 10, { align: "center" });
+    };
+    
+    const annualRows = [];
+    let yearPrincipal = 0; let yearInterest = 0; let yearTotal = 0; let currentYear = 1;
+    calculatedData.schedule.forEach((row, index) => {
+      yearPrincipal += row.principalComponent; yearInterest += row.interestComponent; yearTotal += row.emi;
+      if ((index + 1) % 12 === 0 || index === calculatedData.schedule.length - 1) {
+        annualRows.push([`Year ${currentYear}`, formatFullNumber(yearTotal), formatFullNumber(yearPrincipal), formatFullNumber(yearInterest), formatCurrency(row.balance)]);
+        yearPrincipal = 0; yearInterest = 0; yearTotal = 0; currentYear++;
+      }
+    });
+
+    doc.autoTable({ 
+      startY: 95, 
+      head: [["Period", "Total Paid", "Principal", "Interest", "Balance"]], 
+      body: annualRows, 
+      theme: 'grid', 
+      headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' }, 
+      styles: { fontSize: 9, cellPadding: 3 }, 
+      alternateRowStyles: { fillColor: [240, 253, 244] }, 
+      margin: { top: 25, bottom: 20, left: 14, right: 14 }, 
+      didDrawPage: (data) => { 
+         drawHeader(doc, data.pageNumber);
+      } 
+    });
+    
+    doc.save("Qwecto_Loan_Report.pdf");
+  };
+
+  const DonutChart = () => {
+    if (!calculatedData) return null;
+    const principalPercent = (calculatedData.principal / calculatedData.totalPayment) * 100;
+    const size = 160, strokeWidth = 20, radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (principalPercent / 100) * circumference;
+
+    return (
+      <div className="relative w-full h-full flex items-center justify-center">
+         <div className="w-64 h-64 rounded-full bg-[#E6F0FA] shadow-[12px_12px_24px_#BCCCDC,-12px_-12px_24px_#FFFFFF] flex items-center justify-center relative">
+            {/* Inset Center */}
+            <div className="w-44 h-44 rounded-full bg-[#E6F0FA] shadow-[inset_6px_6px_12px_#BCCCDC,inset_-6px_-6px_12px_#FFFFFF] flex flex-col items-center justify-center p-4 text-center z-10">
+               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Interest</span>
+               <span className="text-2xl font-bold text-rose-400">{calculatedData ? formatFullNumber(calculatedData.totalInterest) : '-'}</span>
+            </div>
+            {/* SVG Ring */}
+            <svg className="absolute inset-0 w-full h-full rotate-[-90deg]" viewBox="0 0 100 100">
+               {/* Track */}
+               <circle cx="50" cy="50" r="45" fill="none" stroke="#E6F0FA" strokeWidth="6" className="shadow-inner" style={{filter: 'drop-shadow(inset 2px 2px 4px rgba(0,0,0,0.1))'}}/>
+               {/* Progress - Cyan to Blue Gradient */}
+               <circle cx="50" cy="50" r="45" fill="none" stroke="url(#brandGradient)" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${offset} 283`} style={{filter: 'drop-shadow(0px 0px 6px rgba(6, 182, 212, 0.4))'}} />
+               <defs>
+                 <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                   <stop offset="0%" stopColor="#06b6d4" />
+                   <stop offset="100%" stopColor="#3b82f6" />
+                 </linearGradient>
+               </defs>
+            </svg>
+         </div>
+      </div>
+    );
+  };
+
+  const AmortizationGraph = ({ extraEMI, sipReturnRate }) => {
+    if (!calculatedData || !calculatedData.schedule.length) return null;
+    const [graphMode, setGraphMode] = useState('annual'); 
+    const [hoveredPoint, setHoveredPoint] = useState(null);
+
+    const annualData = useMemo(() => {
+        const groups = {};
+        calculatedData.schedule.forEach(row => {
+            const y = Math.ceil(row.month / 12);
+            if (!groups[y]) groups[y] = { year: y, principal: 0, interest: 0, balance: row.balance, month: row.month };
+            groups[y].principal += row.principalComponent;
+            groups[y].interest += row.interestComponent;
+            groups[y].balance = row.balance; 
+        });
+        return Object.values(groups).sort((a, b) => a.year - b.year);
+    }, [calculatedData]);
+
+    const smartRepayData = useMemo(() => {
+        const sipMonthlyRate = (sipReturnRate / 12) / 100;
+        return annualData.map(d => {
+            const monthsElapsed = d.year * 12;
+            let sipValue = 0;
+            if (sipMonthlyRate === 0) sipValue = parseFloat(extraEMI) * monthsElapsed;
+            else sipValue = parseFloat(extraEMI) * ((Math.pow(1 + sipMonthlyRate, monthsElapsed) - 1) / sipMonthlyRate) * (1 + sipMonthlyRate);
+            return { ...d, sipValue };
+        });
+    }, [annualData, extraEMI, sipReturnRate]);
+
+    const data = graphMode === 'annual' ? annualData : smartRepayData;
+    if (data.length === 0) return null;
+
+    const height = 220, width = 600, padding = 30;
+    const graphWidth = width - padding * 2, graphHeight = height - padding * 2;
+    
+    let maxVal = 0;
+    if (graphMode === 'annual') {
+        maxVal = Math.max(...data.map(d => d.principal), ...data.map(d => d.interest), 1) * 1.1;
+    } else {
+        maxVal = Math.max(...data.map(d => d.balance), ...data.map(d => d.sipValue), 1) * 1.1;
+    }
+
+    const getCoords = (i, val) => {
+      const divisor = data.length > 1 ? data.length - 1 : 1;
+      const x = padding + (i / divisor) * graphWidth;
+      const y = height - padding - (val / maxVal) * graphHeight;
+      return { x: isNaN(x) ? 0 : x, y: isNaN(y) ? 0 : y };
+    };
+    
+    let line1Points = '', line2Points = '';
+    if (graphMode === 'annual') {
+        line1Points = data.map((d, i) => { const { x, y } = getCoords(i, d.interest); return `${x},${y}`; }).join(' ');
+        line2Points = data.map((d, i) => { const { x, y } = getCoords(i, d.principal); return `${x},${y}`; }).join(' ');
+    } else {
+        line1Points = data.map((d, i) => { const { x, y } = getCoords(i, d.balance); return `${x},${y}`; }).join(' ');
+        line2Points = data.map((d, i) => { const { x, y } = getCoords(i, d.sipValue); return `${x},${y}`; }).join(' ');
+    }
+
+    return (
+      <div className="mb-6 p-4 rounded-[30px] bg-[#E6F0FA] shadow-[inset_6px_6px_10px_0_rgba(163,177,198,0.7),inset_-6px_-6px_10px_0_rgba(255,255,255,0.8)] relative">
+        <div className="flex items-center justify-between mb-6 px-2 pt-2">
+           <h4 className="text-sm font-bold text-slate-600 tracking-wide uppercase">
+               {graphMode === 'annual' ? 'Annual Breakdown' : 'Debt-Free Timeline'}
+           </h4>
+           <div className="flex bg-[#E6F0FA] rounded-xl p-1 shadow-[9px_9px_16px_rgb(163,177,198,0.5),-9px_-9px_16px_rgba(255,255,255,0.6)]">
+              <button onClick={() => setGraphMode('annual')} className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${graphMode === 'annual' ? 'bg-blue-100 text-blue-600 shadow-inner' : 'text-slate-400'}`}>Breakdown</button>
+              <button onClick={() => setGraphMode('smartRepay')} className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${graphMode === 'smartRepay' ? 'bg-blue-100 text-blue-600 shadow-inner' : 'text-slate-400'}`}>Smart Repay</button>
+           </div>
+        </div>
+        
+        <div className="flex gap-4 text-xs font-bold justify-center mb-2">
+            <div className="flex items-center gap-1"><div className={`w-3 h-3 rounded-full shadow-sm ${graphMode === 'annual' ? 'bg-rose-500' : 'bg-slate-400'}`}></div><span className="text-slate-500">{graphMode === 'annual' ? 'Interest Paid' : 'Loan Balance'}</span></div>
+            <div className="flex items-center gap-1"><div className={`w-3 h-3 rounded-full shadow-sm ${graphMode === 'annual' ? 'bg-blue-500' : 'bg-indigo-500'}`}></div><span className="text-slate-500">{graphMode === 'annual' ? 'Principal Paid' : 'SIP Value'}</span></div>
+        </div>
+
+        <div className="w-full h-64 relative">
+          <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible font-sans">
+            {/* Soft Axis Line */}
+            <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#cbd5e1" strokeWidth="3" strokeLinecap="round" className="opacity-50" />
+            
+            {/* Line 1 (Interest or Balance) */}
+            <polyline points={line1Points} fill="none" stroke={graphMode === 'annual' ? '#F43F5E' : '#94a3b8'} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(3px 3px 3px rgba(244, 63, 94, 0.3))' }} />
+            
+            {/* Line 2 (Principal or SIP) */}
+            <polyline points={line2Points} fill="none" stroke={graphMode === 'annual' ? '#3B82F6' : '#6366f1'} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(3px 3px 3px rgba(59, 130, 246, 0.3))' }} />
+            
+            {/* Data Points */}
+            {data.map((d, index) => {
+                const v1 = graphMode === 'annual' ? d.interest : d.balance;
+                const v2 = graphMode === 'annual' ? d.principal : d.sipValue;
+                const c1 = getCoords(index, v1);
+                const c2 = getCoords(index, v2);
+
+                return (
+                  <g key={d.year}>
+                    {/* Hover Target */}
+                    <rect x={c1.x - 15} y="0" width="30" height={height} opacity="0" onMouseEnter={() => setHoveredPoint({ ...d, v1, v2, x: c1.x })} onMouseLeave={() => setHoveredPoint(null)} className="cursor-pointer" />
+                    
+                    {/* Dot 1 */}
+                    <circle cx={c1.x} cy={c1.y} r="6" fill="#E6F0FA" stroke={graphMode === 'annual' ? '#F43F5E' : '#94a3b8'} strokeWidth="3" className="pointer-events-none" style={{ filter: 'drop-shadow(2px 2px 3px rgba(163, 177, 198, 0.6))' }} />
+                    
+                    {/* Dot 2 */}
+                    <circle cx={c2.x} cy={c2.y} r="6" fill="#E6F0FA" stroke={graphMode === 'annual' ? '#3B82F6' : '#6366f1'} strokeWidth="3" className="pointer-events-none" style={{ filter: 'drop-shadow(2px 2px 3px rgba(163, 177, 198, 0.6))' }} />
+                  </g>
+                )
+             })}
+             
+             {/* Tooltip */}
+             {hoveredPoint && (
+               <g transform={`translate(${hoveredPoint.x > width / 2 ? hoveredPoint.x - 220 : hoveredPoint.x + 20}, ${height/2 - 50})`}>
+                 <foreignObject width="200" height="110">
+                    <div className={`bg-[#E6F0FA] text-slate-600 text-xs p-3 rounded-xl shadow-[6px_6px_12px_#BCCCDC,-6px_-6px_12px_#FFFFFF] border border-white/50 ${hoveredPoint.x > width / 2 ? 'text-right' : 'text-left'}`}>
+                        <div className="font-bold mb-2 text-slate-800 text-sm uppercase tracking-wide border-b border-slate-300 pb-1">{`Year ${hoveredPoint.year}`}</div>
+                        <div className="flex justify-between gap-4 mb-1">
+                            <span className={`font-bold ${graphMode === 'annual' ? 'text-rose-500' : 'text-slate-500'}`}>{graphMode === 'annual' ? 'Interest' : 'Balance'}</span>
+                            <span>{formatCompactNumber(hoveredPoint.v1)}</span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                            <span className={`font-bold ${graphMode === 'annual' ? 'text-blue-600' : 'text-indigo-500'}`}>{graphMode === 'annual' ? 'Principal' : 'SIP Value'}</span>
+                            <span>{formatCompactNumber(hoveredPoint.v2)}</span>
+                        </div>
+                    </div>
+                 </foreignObject>
+               </g>
+             )}
+          </svg>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <NeumorphicLayout>
+      <div className="q-grid">
+        
+        {/* THE Q BODY (Main Calculator) */}
+        <NeumorphicCard className="q-body p-8 md:p-10 relative overflow-hidden h-full flex flex-col justify-between min-h-[600px]">
+           <div className="flex justify-between items-center mb-8">
+              <h1 className="text-2xl font-bold text-slate-700 tracking-tight flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-[#E6F0FA] shadow-[5px_5px_10px_#BCCCDC,-5px_-5px_10px_#FFFFFF] text-cyan-600">
+                  <Calculator size={28} />
+                </div>
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-blue-600">Qwecto</span>
+              </h1>
+           </div>
+
+           <div className="flex flex-col gap-8 flex-grow">
+              {/* Top Half: Chart & Result */}
+              <div className="flex flex-col items-center">
+                 <DonutChart />
+                 <div className="mt-8 text-center">
+                    <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+                      {calcTarget === 'principal' ? 'Loan Amount' : 'Monthly EMI'}
+                    </span>
+                    <div className="text-5xl font-bold text-slate-700 mt-2 tracking-tight drop-shadow-sm">
+                       {calculatedData ? (calcTarget === 'principal' ? formatFullNumber(calculatedData.principal) : formatCurrency(calculatedData.emi)) : '0'}
+                    </div>
+                 </div>
+              </div>
+
+              {/* Bottom Half: Inputs */}
+              <div className="grid grid-cols-1 gap-1">
+                 <NeumorphicInput 
+                    label="Loan Amount" 
+                    value={calcTarget === 'principal' ? (calculatedData?.principal?.toFixed(0) || 0) : values.principal} 
+                    onChange={(val) => handleInputChange('principal', val)} 
+                    prefix="₹" 
+                    isCalculated={calcTarget === 'principal'} 
+                    onFocus={() => handleInputChange('principal', calculatedData?.principal?.toFixed(0) || 0)}
+                    onToggle={() => handleManualTargetSelect('principal')}
+                    helperText={amountToWords(calcTarget === 'principal' ? calculatedData?.principal : values.principal)}
+                 />
+                 
+                 <div className="flex gap-4 mb-1">
+                    <div className="w-2/3">
+                       <NeumorphicInput 
+                          label="Interest Rate" 
+                          value={calcTarget === 'rate' ? (calculatedData?.rate?.toFixed(2) || 0) : values.rate} 
+                          onChange={(val) => handleInputChange('rate', val)} 
+                          suffix="%" 
+                          step={0.1}
+                          isCalculated={calcTarget === 'rate'} 
+                          onFocus={() => handleInputChange('rate', calculatedData?.rate?.toFixed(2) || 0)}
+                          onToggle={() => handleManualTargetSelect('rate')}
+                       />
+                    </div>
+                    <div className="w-1/3 pt-7 mb-6">
+                       <NeumorphicToggle options={[{label: 'Fix', value: 'fixed'}, {label: 'Flt', value: 'floating'}]} value={interestType} onChange={setInterestType} />
+                    </div>
+                 </div>
+
+                 <div className="flex gap-4 mb-1">
+                    <div className="w-2/3">
+                       <NeumorphicInput 
+                          label="Tenure" 
+                          value={calcTarget === 'tenure' ? (tenureType === 'years' ? (calculatedData?.months / 12).toFixed(1) : calculatedData?.months) : values.tenure} 
+                          onChange={(val) => handleInputChange('tenure', val)} 
+                          isCalculated={calcTarget === 'tenure'} 
+                          onFocus={() => handleInputChange('tenure', tenureType === 'years' ? (calculatedData?.months / 12).toFixed(1) : calculatedData?.months)}
+                          onToggle={() => handleManualTargetSelect('tenure')}
+                       />
+                    </div>
+                    <div className="w-1/3 pt-7 mb-6">
+                       <NeumorphicToggle options={[{label: 'Yr', value: 'years'}, {label: 'Mo', value: 'months'}]} value={tenureType} onChange={setTenureType} />
+                    </div>
+                 </div>
+
+                 <NeumorphicInput 
+                    label="EMI" 
+                    value={calcTarget === 'emi' ? (calculatedData?.emi?.toFixed(0) || 0) : values.emi} 
+                    onChange={(val) => handleInputChange('emi', val)} 
+                    prefix="₹" 
+                    isCalculated={calcTarget === 'emi'} 
+                    onFocus={() => handleInputChange('emi', calculatedData?.emi?.toFixed(0) || 0)}
+                    onToggle={() => handleManualTargetSelect('emi')}
+                    helperText={amountToWords(calcTarget === 'emi' ? calculatedData?.emi : values.emi)}
+                 />
+              </div>
+           </div>
+        </NeumorphicCard>
+
+        {/* THE Q TAIL (Results & Advanced Tools) */}
+        <div className="q-tail flex flex-col gap-6">
+           {/* Tail Navigation */}
+           <div className="flex bg-[#E6F0FA] rounded-2xl p-1.5 shadow-[inset_6px_6px_10px_#BCCCDC,inset_-6px_-6px_10px_#FFFFFF] mb-2">
+              {[{ id: 'schedule', label: 'Schedule', icon: Calendar }, { id: 'smartRepay', label: 'Smart Repay', icon: Target }].map(tab => (
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold uppercase transition-all duration-300 ${activeTab === tab.id ? 'bg-[#E6F0FA] text-cyan-600 shadow-[6px_6px_12px_#BCCCDC,-6px_-6px_12px_#FFFFFF]' : 'text-slate-400 hover:text-slate-600'}`}>
+                     <tab.icon size={16}/> {tab.label}
+                  </button>
+              ))}
+           </div>
+
+           <NeumorphicCard className="p-6 min-h-[500px] flex flex-col">
+              
+              {/* SCHEDULE VIEW */}
+              {activeTab === 'schedule' && (
+                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex-grow flex flex-col">
+                    <div className="flex justify-between items-center mb-6">
+                       <h3 className="text-lg font-bold text-slate-700">Yearly Breakdown</h3>
+                       <div className="flex gap-2">
+                          <button onClick={downloadCSV} className="p-2 rounded-lg text-slate-500 hover:text-cyan-600 shadow-[4px_4px_8px_#BCCCDC,-4px_-4px_8px_#FFFFFF] active:shadow-inner transition-all"><FileText size={18}/></button>
+                          <button onClick={downloadPDF} className="p-2 rounded-lg text-slate-500 hover:text-cyan-600 shadow-[4px_4px_8px_#BCCCDC,-4px_-4px_8px_#FFFFFF] active:shadow-inner transition-all"><Download size={18}/></button>
+                       </div>
+                    </div>
+                    
+                    <AmortizationGraph extraEMI={extraEMI} sipReturnRate={sipReturnRate} />
+                    
+                    <div className="flex-grow overflow-hidden rounded-2xl bg-[#E6F0FA] shadow-[inset_6px_6px_10px_#BCCCDC,inset_-6px_-6px_10px_#FFFFFF] p-4 relative">
+                       <div className="overflow-auto h-[400px] pr-2 custom-scrollbar">
+                          <table className="w-full text-sm">
+                             <thead className="text-xs text-slate-400 font-bold uppercase sticky top-0 bg-[#E6F0FA] z-10">
+                                <tr>
+                                   <th className="pb-4 text-left pl-2">Period</th>
+                                   <th className="pb-4 text-right">Prin.</th>
+                                   <th className="pb-4 text-right">Int.</th>
+                                   <th className="pb-4 text-right pr-2">Bal.</th>
+                                </tr>
+                             </thead>
+                             <tbody className="text-slate-600">
+                                {calculatedData?.schedule?.filter((_, i) => (i + 1) % 12 === 0 || i === calculatedData.schedule.length - 1).map((row, idx) => (
+                                   <tr key={row.month} className="group border-b border-slate-200/50 last:border-0">
+                                      <td className="py-3 pl-2 font-bold text-slate-700">Year {idx + 1}</td>
+                                      <td className="py-3 text-right text-emerald-600">{formatCompactNumber(row.principalComponent)}</td>
+                                      <td className="py-3 text-right text-rose-500">{formatCompactNumber(row.interestComponent)}</td>
+                                      <td className="py-3 text-right pr-2 font-medium">{formatCompactNumber(row.balance)}</td>
+                                   </tr>
+                                ))}
+                             </tbody>
+                          </table>
+                       </div>
+                    </div>
+
+                    {/* Smart Repay Teaser */}
+                    <div onClick={() => setActiveTab('smartRepay')} className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 shadow-[8px_8px_16px_#BCCCDC,-8px_-8px_16px_#FFFFFF] text-white cursor-pointer hover:scale-[1.02] transition-transform">
+                       <div className="flex justify-between items-center">
+                          <div>
+                             <p className="text-xs font-medium opacity-90 uppercase tracking-wider mb-1">Save Interest</p>
+                             <p className="text-sm font-bold">Close loan early with Smart Repay <ChevronRight size={14} className="inline" /></p>
+                          </div>
+                          <Target size={24} className="opacity-80"/>
+                       </div>
+                    </div>
+                 </div>
+              )}
+
+              {/* SMART REPAY VIEW */}
+              {activeTab === 'smartRepay' && (
+                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex-grow flex flex-col gap-6">
+                    
+                    {/* Input Card */}
+                    <div className="p-5 rounded-2xl bg-[#E6F0FA] shadow-[inset_6px_6px_10px_#BCCCDC,inset_-6px_-6px_10px_#FFFFFF]">
+                       <NeumorphicInput label="Monthly Surplus Investment" value={extraEMI} onChange={setExtraEMI} prefix="₹" helperText={amountToWords(extraEMI)} />
+                       <NeumorphicInput label="Expected Return (%)" value={sipReturnRate} onChange={setSipReturnRate} suffix="%" />
+                    </div>
+
+                    {/* Results */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 rounded-2xl bg-[#E6F0FA] shadow-[6px_6px_12px_#BCCCDC,-6px_-6px_12px_#FFFFFF]">
+                           <p className="text-xs text-slate-400 font-bold uppercase">Total Invested</p>
+                           <p className="text-lg font-bold text-slate-700 mt-1">{formatCompactNumber(analysisData.invested)}</p>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-[#E6F0FA] shadow-[6px_6px_12px_#BCCCDC,-6px_-6px_12px_#FFFFFF] border border-cyan-200">
+                           <p className="text-xs text-cyan-600 font-bold uppercase">Profit</p>
+                           <p className="text-lg font-bold text-cyan-600 mt-1">+{formatCompactNumber(analysisData.profit)}</p>
+                        </div>
+                    </div>
+
+                    {analysisData.foreclosureMonth && (
+                       <div className="p-5 rounded-2xl bg-[#E6F0FA] shadow-[6px_6px_12px_#BCCCDC,-6px_-6px_12px_#FFFFFF] border-l-4 border-cyan-500">
+                          <div className="flex items-center gap-3 mb-2">
+                             <Clock size={20} className="text-cyan-600" />
+                             <h4 className="font-bold text-slate-700">Debt-Free by Year {(analysisData.foreclosureMonth/12).toFixed(1)}</h4>
+                          </div>
+                          <p className="text-xs text-slate-500 leading-relaxed">
+                             Your SIP value ({formatCompactNumber(analysisData.maturity)}) exceeds loan balance. 
+                             <span className="block mt-1 font-bold text-cyan-600">You save {formatCompactNumber(analysisData.interestSaved)} interest!</span>
+                          </p>
+                       </div>
+                    )}
+                     {analysisData.emiOpportunityValue > 0 && (<div className="mt-6 p-6 rounded-2xl bg-[#E6F0FA] neumorphic-shadow border border-blue-100"><div className="flex items-center gap-3 mb-4"><div className="p-2 rounded-full bg-rose-100 text-rose-500 shadow-inner"><ArrowRightLeft size={20} /></div><h4 className="text-base font-bold text-slate-700">Opportunity Cost of EMI</h4></div><div className="flex justify-between items-end"><div><p className="text-xs text-slate-500 mb-1">Investing saved EMI for remaining {(analysisData.savedTenureMonths/12).toFixed(1)} Years:</p></div><span className="text-2xl font-bold text-rose-500">{formatCurrency(analysisData.emiOpportunityValue)}</span></div></div>)}
+                 </div>
+              )}
+
+           </NeumorphicCard>
+        </div>
+
+      </div>
+    </NeumorphicLayout>
+  );
+}
